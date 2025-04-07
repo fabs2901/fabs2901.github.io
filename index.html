@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Einfacher Kalender</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kalender mit Firebase</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -33,26 +33,62 @@
       color: white;
     }
   </style>
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBqgDbdrNeyZmgpqvYsjrRXR6C5jwCNWsU",
+      authDomain: "kalenderapp-bd072.firebaseapp.com",
+      databaseURL: "https://kalenderapp-bd072-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "kalenderapp-bd072",
+      storageBucket: "kalenderapp-bd072.firebasestorage.app",
+      messagingSenderId: "173720245818",
+      appId: "1:173720245818:web:ba16e0ae3908d8ae630703"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const calendar = document.getElementById("calendar");
+      const daysInMonth = 31;
+
+      for (let i = 1; i <= daysInMonth; i++) {
+        const day = document.createElement("div");
+        day.classList.add("day");
+        day.textContent = i;
+        day.id = `day-${i}`;
+
+        // Klick-Event: Firebase-Daten toggeln
+        day.addEventListener("click", () => {
+          const isRed = day.classList.contains("red");
+          const dayRef = ref(db, "verhindert/" + i);
+          set(dayRef, !isRed);
+        });
+
+        calendar.appendChild(day);
+      }
+
+      // Live-Update aller Tage
+      const verhindertRef = ref(db, "verhindert");
+      onValue(verhindertRef, (snapshot) => {
+        const data = snapshot.val() || {};
+        for (let i = 1; i <= daysInMonth; i++) {
+          const el = document.getElementById(`day-${i}`);
+          if (data[i]) {
+            el.classList.add("red");
+          } else {
+            el.classList.remove("red");
+          }
+        }
+      });
+    });
+  </script>
 </head>
 <body>
-  <h1>Monatskalender</h1>
+  <h1>Monatskalender (Synchronisiert)</h1>
   <div class="calendar" id="calendar"></div>
-
-  <script>
-    const calendar = document.getElementById('calendar');
-    const daysInMonth = 31; // Ändere auf 30 für einen anderen Monat
-
-    for (let i = 1; i <= daysInMonth; i++) {
-      const day = document.createElement('div');
-      day.classList.add('day');
-      day.textContent = i;
-
-      day.addEventListener('click', () => {
-        day.classList.toggle('red');
-      });
-
-      calendar.appendChild(day);
-    }
-  </script>
 </body>
 </html>
