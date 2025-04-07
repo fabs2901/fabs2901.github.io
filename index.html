@@ -100,18 +100,32 @@
       return colors[Math.floor(Math.random() * colors.length)];
     }
 
-    function updateSelectedDays(data) {
-      userDaysList.innerHTML = "";
-      for (const [month, days] of Object.entries(data)) {
-        for (const [day, users] of Object.entries(days)) {
-          if (users[username]) {
-            const li = document.createElement("li");
-            li.textContent = `${day}. ${monthNames[month]}`;
-            userDaysList.appendChild(li);
-          }
-        }
-      }
-    }
+	function updateAllUsersList(data) {
+	  const userMap = {}; // username => { color, days: ["12. Juni", "5. Juli"] }
+
+	  for (const [month, days] of Object.entries(data)) {
+		for (const [day, users] of Object.entries(days)) {
+		  for (const [user, color] of Object.entries(users)) {
+			if (!userMap[user]) userMap[user] = { color, days: [] };
+			userMap[user].days.push(`${day}. ${monthNames[month]}`);
+		  }
+		}
+	  }
+
+  const userList = document.getElementById("all-users-list");
+  userList.innerHTML = "";
+
+  Object.entries(userMap).forEach(([user, info]) => {
+    const li = document.createElement("li");
+    li.style.marginBottom = "10px";
+    li.innerHTML = `
+      <span style="display: inline-block; width: 12px; height: 12px; background-color: ${info.color}; border-radius: 50%; margin-right: 5px;"></span>
+      <strong>${user}</strong>: ${info.days.join(", ")}
+    `;
+    userList.appendChild(li);
+  });
+}
+
 
     async function assignColorFromFirebase(name) {
       const snapshot = await get(ref(db, "abstimmungen"));
@@ -184,7 +198,7 @@
         const fullData = { juni: {}, juli: {} };
         get(ref(db, "abstimmungen")).then(snapshot => {
           const val = snapshot.val() || {};
-          updateSelectedDays(val);
+           updateAllUsersList(val);
         });
       });
     }
@@ -233,8 +247,8 @@
     <div id="calendars"></div>
   </div>
 <div class="right">
-  <h2>Deine Auswahl</h2>
-  <ul id="user-days"></ul>
+  <h2>Alle Einträge</h2>
+  <ul id="all-users-list"></ul>
   <button id="resetBtn" style="display:none; margin-top: 20px; padding: 10px; background: crimson; color: white; border: none; border-radius: 5px; cursor: pointer;">
     🔄 Alles zurücksetzen
   </button>
