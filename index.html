@@ -51,7 +51,7 @@
       transform: translateX(-50%);
       display: flex;
       flex-wrap: wrap;
-      justify-content: center;
+      justify-content: left;
       gap: 3px;
     }
     .dot {
@@ -70,6 +70,11 @@
       list-style: none;
       padding-left: 0;
     }
+	
+	thead {
+		text-align: left;
+		
+	}
   </style>
   <!-- Firebase SDK -->
   <script type="module">
@@ -174,19 +179,6 @@
 	  }
 	  return Array.from(daysSet);
 	}
-
-
-	// Holen der Liste aller Tage aus den Daten
-	function getAllDays(data) {
-	  const daysSet = new Set();
-	  for (const [month, days] of Object.entries(data)) {
-		for (const [day] of Object.entries(days)) {
-		  daysSet.add(`${day}. ${monthNames[month]}`);
-		}
-	  }
-	  return Array.from(daysSet);
-	}
-
 
 	function updateAllUsersList(data) {
 	  const userMap = {}; // username => { color, days: ["12. Juni", "5. Juli"] }
@@ -345,11 +337,7 @@
   <table id="user-table" style="width: 100%; border-collapse: collapse;">
     <thead>
       <tr>
-        <th>Tag</th>
-        <th>Max</th>
-        <th>Lisa</th>
-        <th>Tom</th>
-        <!-- Weitere Spalten für User können hier dynamisch hinzugefügt werden -->
+
       </tr>
     </thead>
     <tbody></tbody>
