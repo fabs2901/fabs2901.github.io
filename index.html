@@ -3,12 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Abstimmungskalender Juni & Juli</title>
+  <title>Urlaubsabstimmung Juni & Juli</title>
   <style>
     body {
       font-family: Arial, sans-serif;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 40px;
       padding: 20px;
-      background: #f9f9f9;
+      background: #f4f4f4;
+    }
+    .left, .right {
+      flex: 1;
+      min-width: 300px;
     }
     h1, h2 {
       text-align: center;
@@ -52,6 +59,17 @@
       height: 10px;
       border-radius: 50%;
     }
+    .right {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      height: fit-content;
+    }
+    ul {
+      list-style: none;
+      padding-left: 0;
+    }
   </style>
   <!-- Firebase SDK -->
   <script type="module">
@@ -74,9 +92,40 @@
     let username = "";
     let userColor = "";
 
+    const monthNames = { juni: "Juni", juli: "Juli" };
+    const userDaysList = document.getElementById("user-days");
+
     function getRandomColor() {
       const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#1abc9c', '#e67e22', '#95a5a6'];
       return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    function updateSelectedDays(data) {
+      userDaysList.innerHTML = "";
+      for (const [month, days] of Object.entries(data)) {
+        for (const [day, users] of Object.entries(days)) {
+          if (users[username]) {
+            const li = document.createElement("li");
+            li.textContent = `${day}. ${monthNames[month]}`;
+            userDaysList.appendChild(li);
+          }
+        }
+      }
+    }
+
+    async function assignColorFromFirebase(name) {
+      const snapshot = await get(ref(db, "abstimmungen"));
+      const data = snapshot.val() || {};
+      for (const month of ["juni", "juli"]) {
+        if (data[month]) {
+          for (const [day, users] of Object.entries(data[month])) {
+            if (users[name]) {
+              return users[name]; // gleiche Farbe behalten
+            }
+          }
+        }
+      }
+      return getRandomColor(); // sonst neu
     }
 
     function createCalendar(monthId, monthName, daysInMonth) {
@@ -104,9 +153,9 @@
           const dayRef = ref(db, `abstimmungen/${monthId}/${day}/${username}`);
           get(dayRef).then((snap) => {
             if (snap.exists()) {
-              set(dayRef, null); // Entfernen
+              set(dayRef, null);
             } else {
-              set(dayRef, userColor); // Hinzufügen
+              set(dayRef, userColor);
             }
           });
         });
@@ -114,13 +163,12 @@
         grid.appendChild(cell);
       }
 
-      // Listener
       const monthRef = ref(db, `abstimmungen/${monthId}`);
       onValue(monthRef, (snapshot) => {
         const data = snapshot.val() || {};
         for (let day = 1; day <= daysInMonth; day++) {
           const dotContainer = document.getElementById(`${monthId}-dots-${day}`);
-          dotContainer.innerHTML = ""; // clear
+          dotContainer.innerHTML = "";
           if (data[day]) {
             Object.entries(data[day]).forEach(([user, color]) => {
               const dot = document.createElement("div");
@@ -131,37 +179,47 @@
             });
           }
         }
+
+        // rechts: eigene Auswahl aktualisieren
+        const fullData = { juni: {}, juli: {} };
+        get(ref(db, "abstimmungen")).then(snapshot => {
+          const val = snapshot.val() || {};
+          updateSelectedDays(val);
+        });
       });
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
-      // Name-Eingabe
+    document.addEventListener("DOMContentLoaded", async () => {
       const nameInput = document.getElementById("nameInput");
-      nameInput.addEventListener("change", () => {
+      nameInput.addEventListener("change", async () => {
         username = nameInput.value.trim().toLowerCase();
         if (username) {
           sessionStorage.setItem("kalender-username", username);
-          userColor = getRandomColor();
+          userColor = await assignColorFromFirebase(username);
         }
       });
 
-      // Wiederherstellen, falls Seite neu geladen
       const savedName = sessionStorage.getItem("kalender-username");
       if (savedName) {
         username = savedName;
         nameInput.value = savedName;
-        userColor = getRandomColor(); // neue Farbe bei neuem Login
+        userColor = await assignColorFromFirebase(username);
       }
 
-      // Kalender bauen
       createCalendar("juni", "Juni", 30);
       createCalendar("juli", "Juli", 31);
     });
   </script>
 </head>
 <body>
-  <h1>Urlaubsabstimmung – Juni & Juli</h1>
-  <input type="text" id="nameInput" placeholder="Dein Name hier eingeben" />
-  <div id="calendars"></div>
+  <div class="left">
+    <h1>Urlaubsabstimmung Juni & Juli</h1>
+    <input type="text" id="nameInput" placeholder="Dein Name hier eingeben" />
+    <div id="calendars"></div>
+  </div>
+  <div class="right">
+    <h2>Deine Auswahl</h2>
+    <ul id="user-days"></ul>
+  </div>
 </body>
 </html>
