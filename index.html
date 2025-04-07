@@ -193,6 +193,7 @@
       const nameInput = document.getElementById("nameInput");
       nameInput.addEventListener("change", async () => {
         username = nameInput.value.trim().toLowerCase();
+		checkAdmin(username);
         if (username) {
           sessionStorage.setItem("kalender-username", username);
           userColor = await assignColorFromFirebase(username);
@@ -205,6 +206,20 @@
         nameInput.value = savedName;
         userColor = await assignColorFromFirebase(username);
       }
+	  
+	  const resetBtn = document.getElementById("resetBtn");
+
+		function checkAdmin(name) {
+		  resetBtn.style.display = name === "admin" ? "block" : "none";
+		}
+
+		resetBtn.addEventListener("click", () => {
+		  if (confirm("Willst du wirklich alle Daten löschen?")) {
+			set(ref(db, "abstimmungen"), null);
+		  }
+		});
+
+		if (username) checkAdmin(username);
 
       createCalendar("juni", "Juni", 30);
       createCalendar("juli", "Juli", 31);
@@ -217,9 +232,12 @@
     <input type="text" id="nameInput" placeholder="Dein Name hier eingeben" />
     <div id="calendars"></div>
   </div>
-  <div class="right">
-    <h2>Deine Auswahl</h2>
-    <ul id="user-days"></ul>
-  </div>
+<div class="right">
+  <h2>Deine Auswahl</h2>
+  <ul id="user-days"></ul>
+  <button id="resetBtn" style="display:none; margin-top: 20px; padding: 10px; background: crimson; color: white; border: none; border-radius: 5px; cursor: pointer;">
+    🔄 Alles zurücksetzen
+  </button>
+</div>
 </body>
 </html>
