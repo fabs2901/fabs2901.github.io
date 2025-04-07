@@ -1,331 +1,217 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Urlaubsabstimmung Juni & Juli</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalender Abstimmungen</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 40px;
-      padding: 20px;
-      background: #f4f4f4;
+    table {
+      border-collapse: collapse;
+      width: 100%;
     }
-    .left, .right {
-      flex: 1;
-      min-width: 300px;
+    table, th, td {
+      border: 1px solid black;
     }
-    h1, h2 {
+    th, td {
+      padding: 8px;
       text-align: center;
     }
-    #nameInput {
-      display: block;
-      margin: 0 auto 20px auto;
-      padding: 10px;
-      font-size: 16px;
-      text-align: center;
-    }
-    .calendar {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 10px;
-      max-width: 600px;
-      margin: 0 auto 40px auto;
-    }
-    .day {
-      background-color: white;
-      border: 1px solid #ccc;
-      padding: 15px 5px;
-      text-align: center;
-      min-height: 60px;
-      position: relative;
-      cursor: pointer;
-      transition: background 0.2s ease;
-    }
-    .color-dots {
-      position: absolute;
-      bottom: 5px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 3px;
-    }
-    .dot {
-      width: 10px;
-      height: 10px;
+    .color-dot {
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
-    }
-    .right {
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      height: fit-content;
-    }
-    ul {
-      list-style: none;
-      padding-left: 0;
+      display: inline-block;
     }
   </style>
-  <!-- Firebase SDK -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getDatabase, ref, onValue, set, get, child } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBqgDbdrNeyZmgpqvYsjrRXR6C5jwCNWsU",
-      authDomain: "kalenderapp-bd072.firebaseapp.com",
-      databaseURL: "https://kalenderapp-bd072-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "kalenderapp-bd072",
-      storageBucket: "kalenderapp-bd072.firebasestorage.app",
-      messagingSenderId: "173720245818",
-      appId: "1:173720245818:web:ba16e0ae3908d8ae630703"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
-    let username = "";
-    let userColor = "";
-
-    const monthNames = { juni: "Juni", juli: "Juli" };
-    const userDaysList = document.getElementById("user-days");
-	
-	get(ref(db, "abstimmungen")).then(snapshot => {
-	  const val = snapshot.val() || {};
-	  updateUserTable(val);  // Tabelle mit allen Einträgen updaten
-	});
-
-
-    function getRandomColor() {
-      const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#1abc9c', '#e67e22', '#95a5a6'];
-      return colors[Math.floor(Math.random() * colors.length)];
-    }
-	
-	function updateUserTable(data) {
-	  const userMap = {}; // Speichert alle User und deren Auswahl
-  
-	  // Schritt 1: Alle User und ihre Farben/Daten sammeln
-	  for (const [month, days] of Object.entries(data)) {
-		for (const [day, users] of Object.entries(days)) {
-		  for (const [user, color] of Object.entries(users)) {
-			if (!userMap[user]) userMap[user] = {};
-			userMap[user][`${day}. ${monthNames[month]}`] = color;
-		  }
-		}
-	  }
-
-	  const tableBody = document.querySelector("#user-table tbody");
-	  tableBody.innerHTML = "";  // Vorherige Tabelle löschen
-
-	  // Schritt 2: Alle Tage (Zeilen) erstellen
-	  const allDays = getAllDays(data);
-	  allDays.forEach((day) => {
-		const row = document.createElement("tr");
-		
-		// Tag als erste Spalte
-		const dayCell = document.createElement("td");
-		dayCell.textContent = day;
-		row.appendChild(dayCell);
-
-		// Für jede User, die einen Tag ausgewählt haben, die Farbe anzeigen
-		Object.entries(userMap).forEach(([user, daysData]) => {
-		  const cell = document.createElement("td");
-		  if (daysData[day]) {
-			// Wenn der User diesen Tag gewählt hat, Farbe anzeigen
-			const colorDot = document.createElement("div");
-			colorDot.style.width = "20px";
-			colorDot.style.height = "20px";
-			colorDot.style.borderRadius = "50%";
-			colorDot.style.backgroundColor = daysData[day];
-			cell.appendChild(colorDot);
-		  }
-		  row.appendChild(cell);
-		});
-
-		tableBody.appendChild(row);
-	  });
-	}
-
-	// Holen der Liste aller Tage aus den Daten
-	function getAllDays(data) {
-	  const daysSet = new Set();
-	  for (const [month, days] of Object.entries(data)) {
-		for (const [day] of Object.entries(days)) {
-		  daysSet.add(`${day}. ${monthNames[month]}`);
-		}
-	  }
-	  return Array.from(daysSet);
-	}
-
-
-	function updateAllUsersList(data) {
-	  const userMap = {}; // username => { color, days: ["12. Juni", "5. Juli"] }
-
-	  for (const [month, days] of Object.entries(data)) {
-		for (const [day, users] of Object.entries(days)) {
-		  for (const [user, color] of Object.entries(users)) {
-			if (!userMap[user]) userMap[user] = { color, days: [] };
-			userMap[user].days.push(`${day}. ${monthNames[month]}`);
-		  }
-		}
-	  }
-
-  const userList = document.getElementById("all-users-list");
-  userList.innerHTML = "";
-
-  Object.entries(userMap).forEach(([user, info]) => {
-    const li = document.createElement("li");
-    li.style.marginBottom = "10px";
-    li.innerHTML = `
-      <span style="display: inline-block; width: 12px; height: 12px; background-color: ${info.color}; border-radius: 50%; margin-right: 5px;"></span>
-      <strong>${user}</strong>: ${info.days.join(", ")}
-    `;
-    userList.appendChild(li);
-  });
-}
-
-
-    async function assignColorFromFirebase(name) {
-      const snapshot = await get(ref(db, "abstimmungen"));
-      const data = snapshot.val() || {};
-      for (const month of ["juni", "juli"]) {
-        if (data[month]) {
-          for (const [day, users] of Object.entries(data[month])) {
-            if (users[name]) {
-              return users[name]; // gleiche Farbe behalten
-            }
-          }
-        }
-      }
-      return getRandomColor(); // sonst neu
-    }
-
-    function createCalendar(monthId, monthName, daysInMonth) {
-      const container = document.getElementById("calendars");
-      const title = document.createElement("h2");
-      title.textContent = monthName;
-      container.appendChild(title);
-
-      const grid = document.createElement("div");
-      grid.classList.add("calendar");
-      grid.id = `calendar-${monthId}`;
-      container.appendChild(grid);
-
-      for (let day = 1; day <= daysInMonth; day++) {
-        const cell = document.createElement("div");
-        cell.classList.add("day");
-        cell.id = `${monthId}-day-${day}`;
-        cell.innerHTML = `${day}<div class="color-dots" id="${monthId}-dots-${day}"></div>`;
-
-        cell.addEventListener("click", () => {
-          if (!username) {
-            alert("Bitte gib zuerst deinen Namen ein.");
-            return;
-          }
-          const dayRef = ref(db, `abstimmungen/${monthId}/${day}/${username}`);
-          get(dayRef).then((snap) => {
-            if (snap.exists()) {
-              set(dayRef, null);
-            } else {
-              set(dayRef, userColor);
-            }
-          });
-        });
-
-        grid.appendChild(cell);
-      }
-
-      const monthRef = ref(db, `abstimmungen/${monthId}`);
-      onValue(monthRef, (snapshot) => {
-        const data = snapshot.val() || {};
-        for (let day = 1; day <= daysInMonth; day++) {
-          const dotContainer = document.getElementById(`${monthId}-dots-${day}`);
-          dotContainer.innerHTML = "";
-          if (data[day]) {
-            Object.entries(data[day]).forEach(([user, color]) => {
-              const dot = document.createElement("div");
-              dot.classList.add("dot");
-              dot.style.backgroundColor = color;
-              dot.title = user;
-              dotContainer.appendChild(dot);
-            });
-          }
-        }
-
-        // rechts: eigene Auswahl aktualisieren
-        const fullData = { juni: {}, juli: {} };
-        get(ref(db, "abstimmungen")).then(snapshot => {
-          const val = snapshot.val() || {};
-           updateAllUsersList(val);
-        });
-      });
-    }
-
-    document.addEventListener("DOMContentLoaded", async () => {
-      const nameInput = document.getElementById("nameInput");
-      nameInput.addEventListener("change", async () => {
-        username = nameInput.value.trim().toLowerCase();
-		checkAdmin(username);
-        if (username) {
-          sessionStorage.setItem("kalender-username", username);
-          userColor = await assignColorFromFirebase(username);
-        }
-      });
-
-      const savedName = sessionStorage.getItem("kalender-username");
-      if (savedName) {
-        username = savedName;
-        nameInput.value = savedName;
-        userColor = await assignColorFromFirebase(username);
-      }
-	  
-	  const resetBtn = document.getElementById("resetBtn");
-
-		function checkAdmin(name) {
-		  resetBtn.style.display = name === "admin" ? "block" : "none";
-		}
-
-		resetBtn.addEventListener("click", () => {
-		  if (confirm("Willst du wirklich alle Daten löschen?")) {
-			set(ref(db, "abstimmungen"), null);
-		  }
-		});
-
-		if (username) checkAdmin(username);
-
-      createCalendar("juni", "Juni", 30);
-      createCalendar("juli", "Juli", 31);
-    });
-  </script>
 </head>
 <body>
-  <div class="left">
-    <h1>Urlaubsabstimmung Juni & Juli</h1>
-    <input type="text" id="nameInput" placeholder="Dein Name hier eingeben" />
-    <div id="calendars"></div>
+  <h1>Kalender Abstimmungen</h1>
+  
+  <label for="username">Dein Name:</label>
+  <input type="text" id="username" placeholder="Gib deinen Namen ein">
+  <button id="submit-name">Abstimmung starten</button>
+  
+  <div id="calendar-container">
+    <!-- Hier wird der Kalender dynamisch eingefügt -->
   </div>
-<div class="right">
-  <h2>Übersicht aller Einträge</h2>
-  <table id="user-table" style="width: 100%; border-collapse: collapse;">
+
+  <h2>Abstimmungstabelle:</h2>
+  <table id="user-table">
     <thead>
       <tr>
         <th>Tag</th>
-        <th>Max</th>
-        <th>Lisa</th>
-        <th>Tom</th>
-        <!-- Weitere Spalten für User können hier dynamisch hinzugefügt werden -->
+        <!-- Dynamische Spalten für die User werden hier hinzugefügt -->
       </tr>
     </thead>
-    <tbody></tbody>
+    <tbody>
+      <!-- Dynamische Zeilen für die Tage werden hier hinzugefügt -->
+    </tbody>
   </table>
-  <button id="resetBtn" style="display:none; margin-top: 20px; padding: 10px; background: crimson; color: white; border: none; border-radius: 5px; cursor: pointer;">
-    🔄 Alles zurücksetzen
-  </button>
-</div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js"></script>
+  <script>
+    // Deine Firebase-Konfiguration
+    const firebaseConfig = {
+      apiKey: "dein-api-key",
+      authDomain: "dein-auth-domain",
+      databaseURL: "deine-database-url",
+      projectId: "dein-projekt-id",
+      storageBucket: "dein-storage-bucket",
+      messagingSenderId: "dein-sender-id",
+      appId: "deine-app-id"
+    };
+
+    // Firebase initialisieren
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Referenz auf den "abstimmungen"-Pfad in der Firebase-Datenbank
+    const abstimmungenRef = db.ref('abstimmungen');
+
+    const usernameInput = document.getElementById('username');
+    const submitButton = document.getElementById('submit-name');
+    const calendarContainer = document.getElementById('calendar-container');
+
+    // Monat Namen
+    const monthNames = {
+      "juni": "Juni",
+      "juli": "Juli"
+    };
+
+    let userColor = null;  // Variable für die Benutzerfarbe
+    let userName = '';  // Variable für den Benutzernamen
+
+    // Dynamisch die Tabelle und den Kalender erstellen
+    function createCalendar() {
+      const months = ["juni", "juli"];
+      let calendarHTML = '';
+      months.forEach(month => {
+        calendarHTML += `<h3>${monthNames[month]}</h3><div class="calendar-month" id="${month}">`;
+        for (let day = 1; day <= (month === "juni" ? 30 : 31); day++) {
+          calendarHTML += `<button class="day" data-month="${month}" data-day="${day}">${day}</button>`;
+        }
+        calendarHTML += `</div>`;
+      });
+      calendarContainer.innerHTML = calendarHTML;
+
+      // Event Listener für die Tage
+      const dayButtons = document.querySelectorAll('.day');
+      dayButtons.forEach(button => {
+        button.addEventListener('click', function () {
+          if (userName) {
+            const month = button.getAttribute('data-month');
+            const day = button.getAttribute('data-day');
+            const color = userColor;
+
+            // Daten in Firebase speichern
+            const dayRef = abstimmungenRef.child(`${month}/${day}`);
+            dayRef.child(userName).set(color);
+
+            alert(`Du hast den ${day}. ${monthNames[month]} abgestimmt.`);
+          } else {
+            alert('Bitte gib zuerst deinen Namen ein!');
+          }
+        });
+      });
+    }
+
+    // Funktion zum Erstellen der User-Tabelle
+    function updateUserTable(data) {
+      const userMap = {}; // Speichert alle User und deren Auswahl
+
+      // Schritt 1: Alle User und ihre Farben/Daten sammeln
+      for (const [month, days] of Object.entries(data)) {
+        for (const [day, users] of Object.entries(days)) {
+          for (const [user, color] of Object.entries(users)) {
+            if (!userMap[user]) userMap[user] = {};
+            userMap[user][`${day}. ${monthNames[month]}`] = color;
+          }
+        }
+      }
+
+      const tableBody = document.querySelector("#user-table tbody");
+      tableBody.innerHTML = "";  // Vorherige Tabelle löschen
+
+      // Schritt 2: Alle Tage (Zeilen) erstellen
+      const allDays = getAllDays(data);
+      const allUsers = Object.keys(userMap); // Alle User sammeln, um dynamisch Spalten zu erzeugen
+      const tableHeader = document.querySelector("#user-table thead tr");
+      tableHeader.innerHTML = "<th>Tag</th>";  // Reset der Header-Zeilen
+
+      // Dynamisch Spalten für User hinzufügen
+      allUsers.forEach(user => {
+        const headerCell = document.createElement("th");
+        headerCell.textContent = user;
+        tableHeader.appendChild(headerCell);
+      });
+
+      // Schritt 3: Zeilen für die Tage erstellen
+      allDays.forEach((day) => {
+        const row = document.createElement("tr");
+
+        // Tag als erste Spalte
+        const dayCell = document.createElement("td");
+        dayCell.textContent = day;
+        row.appendChild(dayCell);
+
+        // Spalten für jeden User hinzufügen
+        allUsers.forEach(user => {
+          const cell = document.createElement("td");
+
+          // Falls der User diesen Tag gewählt hat, die Farbe anzeigen
+          if (userMap[user][day]) {
+            const colorDot = document.createElement("div");
+            colorDot.style.width = "20px";
+            colorDot.style.height = "20px";
+            colorDot.style.borderRadius = "50%";
+            colorDot.style.backgroundColor = userMap[user][day];
+            cell.appendChild(colorDot);
+          }
+          row.appendChild(cell);
+        });
+
+        tableBody.appendChild(row);
+      });
+    }
+
+    // Holen der Liste aller Tage aus den Daten
+    function getAllDays(data) {
+      const daysSet = new Set();
+      for (const [month, days] of Object.entries(data)) {
+        for (const [day] of Object.entries(days)) {
+          daysSet.add(`${day}. ${monthNames[month]}`);
+        }
+      }
+      return Array.from(daysSet);
+    }
+
+    // Wenn der Benutzer seinen Namen eingibt, dann:
+    submitButton.addEventListener('click', function () {
+      userName = usernameInput.value;
+      if (userName) {
+        userColor = getRandomColor();  // Zufällige Farbe für den User
+        alert(`Willkommen, ${userName}! Deine Farbe ist ${userColor}`);
+      } else {
+        alert('Bitte gib deinen Namen ein!');
+      }
+    });
+
+    // Funktion für zufällige Farben
+    function getRandomColor() {
+      const colors = ["#FF6347", "#4682B4", "#32CD32", "#FFD700", "#8A2BE2", "#FF1493"];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    // Initiales Abrufen der Daten und bei Änderungen die Tabelle aktualisieren
+    abstimmungenRef.on("value", function(snapshot) {
+      const data = snapshot.val() || {};  // Wenn keine Daten vorhanden, leeres Objekt
+      updateUserTable(data);  // Tabelle aktualisieren
+    });
+
+    // Initialisiere den Kalender
+    createCalendar();
+
+  </script>
 </body>
 </html>
