@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Einfacher Kalender</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f4f4f4;
+    }
+    h1 {
+      text-align: center;
+    }
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    .day {
+      background-color: white;
+      border: 1px solid #ccc;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    .day.red {
+      background-color: #e74c3c;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <h1>Monatskalender</h1>
+  <div class="calendar" id="calendar"></div>
+
+  <script>
+    const calendar = document.getElementById('calendar');
+    const daysInMonth = 31; // Ändere auf 30 für einen anderen Monat
+
+    for (let i = 1; i <= daysInMonth; i++) {
+      const day = document.createElement('div');
+      day.classList.add('day');
+      day.textContent = i;
+
+      day.addEventListener('click', () => {
+        day.classList.toggle('red');
+      });
+
+      calendar.appendChild(day);
+    }
+  </script>
+</body>
+</html>
