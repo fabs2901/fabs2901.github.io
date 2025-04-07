@@ -94,11 +94,74 @@
 
     const monthNames = { juni: "Juni", juli: "Juli" };
     const userDaysList = document.getElementById("user-days");
+	
+	get(ref(db, "abstimmungen")).then(snapshot => {
+	  const val = snapshot.val() || {};
+	  updateUserTable(val);  // Tabelle mit allen Einträgen updaten
+	});
+
 
     function getRandomColor() {
       const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#1abc9c', '#e67e22', '#95a5a6'];
       return colors[Math.floor(Math.random() * colors.length)];
     }
+	
+	function updateUserTable(data) {
+	  const userMap = {}; // Speichert alle User und deren Auswahl
+  
+	  // Schritt 1: Alle User und ihre Farben/Daten sammeln
+	  for (const [month, days] of Object.entries(data)) {
+		for (const [day, users] of Object.entries(days)) {
+		  for (const [user, color] of Object.entries(users)) {
+			if (!userMap[user]) userMap[user] = {};
+			userMap[user][`${day}. ${monthNames[month]}`] = color;
+		  }
+		}
+	  }
+
+	  const tableBody = document.querySelector("#user-table tbody");
+	  tableBody.innerHTML = "";  // Vorherige Tabelle löschen
+
+	  // Schritt 2: Alle Tage (Zeilen) erstellen
+	  const allDays = getAllDays(data);
+	  allDays.forEach((day) => {
+		const row = document.createElement("tr");
+		
+		// Tag als erste Spalte
+		const dayCell = document.createElement("td");
+		dayCell.textContent = day;
+		row.appendChild(dayCell);
+
+		// Für jede User, die einen Tag ausgewählt haben, die Farbe anzeigen
+		Object.entries(userMap).forEach(([user, daysData]) => {
+		  const cell = document.createElement("td");
+		  if (daysData[day]) {
+			// Wenn der User diesen Tag gewählt hat, Farbe anzeigen
+			const colorDot = document.createElement("div");
+			colorDot.style.width = "20px";
+			colorDot.style.height = "20px";
+			colorDot.style.borderRadius = "50%";
+			colorDot.style.backgroundColor = daysData[day];
+			cell.appendChild(colorDot);
+		  }
+		  row.appendChild(cell);
+		});
+
+		tableBody.appendChild(row);
+	  });
+	}
+
+	// Holen der Liste aller Tage aus den Daten
+	function getAllDays(data) {
+	  const daysSet = new Set();
+	  for (const [month, days] of Object.entries(data)) {
+		for (const [day] of Object.entries(days)) {
+		  daysSet.add(`${day}. ${monthNames[month]}`);
+		}
+	  }
+	  return Array.from(daysSet);
+	}
+
 
 	function updateAllUsersList(data) {
 	  const userMap = {}; // username => { color, days: ["12. Juni", "5. Juli"] }
@@ -247,8 +310,19 @@
     <div id="calendars"></div>
   </div>
 <div class="right">
-  <h2>Alle Einträge</h2>
-  <ul id="all-users-list"></ul>
+  <h2>Übersicht aller Einträge</h2>
+  <table id="user-table" style="width: 100%; border-collapse: collapse;">
+    <thead>
+      <tr>
+        <th>Tag</th>
+        <th>Max</th>
+        <th>Lisa</th>
+        <th>Tom</th>
+        <!-- Weitere Spalten für User können hier dynamisch hinzugefügt werden -->
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
   <button id="resetBtn" style="display:none; margin-top: 20px; padding: 10px; background: crimson; color: white; border: none; border-radius: 5px; cursor: pointer;">
     🔄 Alles zurücksetzen
   </button>
